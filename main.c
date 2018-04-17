@@ -19,7 +19,7 @@ int getNextNonWhiteSpaceChar(int file, char buffer[BUFFER_SIZE], int curr_index)
             } else {
                 continue;
             }
-        } else if (read(file, buffer, BUFFER_SIZE) > 0){
+        } else if (read(file, buffer, BUFFER_SIZE) > 0) {
             curr_index = 0;
             continue;
         } else {
@@ -29,13 +29,6 @@ int getNextNonWhiteSpaceChar(int file, char buffer[BUFFER_SIZE], int curr_index)
     return FILE_TERMINATED;
 }
 
-int isLatinLetter(char c) {
-    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
-}
-
-int compareLatinLetters(char c1, char c2) {
-    return tolower(c1) == tolower(c2);
-}
 
 int compareFiles(char file_path1[], char file_path2[]) {
     printf("%s\n%s\n", file_path1, file_path2);
@@ -63,32 +56,67 @@ int compareFiles(char file_path1[], char file_path2[]) {
         return ERROR;
     }
 
-    while(read(file1, buff1, BUFFER_SIZE) > 0 && read(file2 ,buff2, BUFFER_SIZE) > 0) {
-                int i, j = 0;
-                while (buff1[i] != '\0' && buff2[j] != '\0') {
-                    // characters are identical
-                    if (buff1[i] == buff2[j]) {
-                        i++; j++;
-                    } else if (buff1[i] == '\n' || buff1[i] == ' ' || buff2[j] == '\n' || buff2[i] == ' ') {
-                        result_code = SIMILAR;
-                        if (buff1[i] == '\n' || buff1[i] == ' ') {
-                            i = getNextNonWhiteSpaceChar(file1, buff1, i);
-                            // todo: check return value
-                            continue;
-                        } else {
-                            j = getNextNonWhiteSpaceChar(file2, buff2, j);
-                            // todo: check return value
-                            continue;
-                        }
-                    } else if (tolower(buff1[i]) == tolower(buff2[j])) {
-                        result_code = SIMILAR;
-                        i++; j++;
-                    } else {
-                        result_code = DIFFERENT;
+    int i, j = 0;
+    if (read(file1, buff1, BUFFER_SIZE) > 0 && read(file2, buff2, BUFFER_SIZE) > 0) {
+        while (buff1[i] != '\0' && buff2[j] != '\0') {
+            // characters are identical
+            if (buff1[i] == buff2[j]) {
+                i++;
+                j++;
+            } else if (buff1[i] == '\n' || buff1[i] == ' ' || buff2[j] == '\n' || buff2[i] == ' ') {
+                result_code = SIMILAR;
+                if (buff1[i] == '\n' || buff1[i] == ' ') {
+                    i = getNextNonWhiteSpaceChar(file1, buff1, i);
+                    if (i == FILE_TERMINATED) {
+                        break;
+                    }
+                } else {
+                    j = getNextNonWhiteSpaceChar(file2, buff2, j);
+                    if (j == FILE_TERMINATED) {
                         break;
                     }
                 }
+            } else if (tolower(buff1[i]) == tolower(buff2[j])) {
+                result_code = SIMILAR;
+                i++;
+                j++;
+            } else {
+                result_code = DIFFERENT;
+                break;
+            }
+
+            if (buff1[i] == '\0') {
+                if (read(file1, buff1, BUFFER_SIZE) > 0) {
+                    i = 0;
+                } else {
+                    break;
+                }
+            }
+
+            if (buff2[j] == '\0') {
+                if (read(file2, buff2, BUFFER_SIZE) > 0) {
+                    j = 0;
+                } else {
+                    break;
+                }
+            }
         }
+    } else {
+        result_code = ERROR;
+        printf("Error while reading from files.\n");
+    }
+
+    // check if one of the file is still open and my contain white spaces.
+    // relevant only if the files is currently similar.
+    if (buff1[i] != '\0' && result_code == SIMILAR) {
+        if (getNextNonWhiteSpaceChar(file1, buff1, i) != FILE_TERMINATED) {
+            result_code = DIFFERENT;
+        }
+    } else if (buff2[j] != '\0' && result_code == SIMILAR) {
+        if (getNextNonWhiteSpaceChar(file2, buff2, j) != FILE_TERMINATED) {
+            result_code = DIFFERENT;
+        }
+    }
 
     close(file1);
     close(file2);
@@ -103,11 +131,14 @@ int main(int argc, char *argv[]) {
     } else {
         int result_code = compareFiles(argv[1], argv[2]);
         switch (result_code) {
-            case IDENTICAL: printf("Files are identical.\n");
+            case IDENTICAL:
+                printf("Files are identical.\n");
                 break;
-            case SIMILAR: printf("Files are similar.\n");
+            case SIMILAR:
+                printf("Files are similar.\n");
                 break;
-            case DIFFERENT: printf("Files are different.\n");
+            case DIFFERENT:
+                printf("Files are different.\n");
                 break;
             default:
                 break;
