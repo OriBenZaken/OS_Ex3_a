@@ -8,9 +8,25 @@
 #define SIMILAR 2
 #define DIFFERENT 1
 #define BUFFER_SIZE 16
+#define FILE_TERMINATED -2
 
 int getNextNonWhiteSpaceChar(int file, char buffer[BUFFER_SIZE], int curr_index) {
-    return 0;
+    while (1) {
+        curr_index++;
+        if (buffer[curr_index] != '\0') {
+            if (buffer[curr_index] != ' ' && buffer[curr_index] != '\n') {
+                return curr_index;
+            } else {
+                continue;
+            }
+        } else if (read(file, buffer, BUFFER_SIZE) > 0){
+            curr_index = 0;
+            continue;
+        } else {
+            break;
+        }
+    }
+    return FILE_TERMINATED;
 }
 
 int isLatinLetter(char c) {
@@ -49,11 +65,12 @@ int compareFiles(char file_path1[], char file_path2[]) {
 
     while(read(file1, buff1, BUFFER_SIZE) > 0 && read(file2 ,buff2, BUFFER_SIZE) > 0) {
                 int i, j = 0;
-                while (buff1[i] != NULL && buff2[j] != NULL) {
+                while (buff1[i] != '\0' && buff2[j] != '\0') {
                     // characters are identical
-                    if (buff1[i] == buff2) {
+                    if (buff1[i] == buff2[j]) {
                         i++; j++;
                     } else if (buff1[i] == '\n' || buff1[i] == ' ' || buff2[j] == '\n' || buff2[i] == ' ') {
+                        result_code = SIMILAR;
                         if (buff1[i] == '\n' || buff1[i] == ' ') {
                             i = getNextNonWhiteSpaceChar(file1, buff1, i);
                             // todo: check return value
@@ -63,7 +80,6 @@ int compareFiles(char file_path1[], char file_path2[]) {
                             // todo: check return value
                             continue;
                         }
-                        result_code = SIMILAR;
                     } else if (tolower(buff1[i]) == tolower(buff2[j])) {
                         result_code = SIMILAR;
                         i++; j++;
@@ -86,6 +102,16 @@ int main(int argc, char *argv[]) {
         printf("Expected two arguments.\n");
     } else {
         int result_code = compareFiles(argv[1], argv[2]);
+        switch (result_code) {
+            case IDENTICAL: printf("Files are identical.\n");
+                break;
+            case SIMILAR: printf("Files are similar.\n");
+                break;
+            case DIFFERENT: printf("Files are different.\n");
+                break;
+            default:
+                break;
+        }
     }
     return 0;
 }
