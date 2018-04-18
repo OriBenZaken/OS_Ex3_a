@@ -10,25 +10,43 @@
 #define BUFFER_SIZE 16
 #define FILE_TERMINATED -2
 
+/**
+ * return the index in buffer of the next non-white-space character in the file.
+ * @param file file descriptor
+ * @param buffer reading buffer
+ * @param curr_index current index in the buffer (expected character in that index to be white space)
+ * @return index in buffer of the next non-white-space character in the file.
+ *          if reading from file was over and a non-white-space character is found - return FILE_TERMINATED
+ *          if error occurred while reading from file - return ERROR
+ */
 int getNextNonWhiteSpaceChar(int file, char buffer[BUFFER_SIZE], int curr_index) {
     int read_bytes;
     while (1) {
         curr_index++;
+        // if buffer still contains bytes to read
         if (buffer[curr_index] != '\0') {
+            // character is not a white space
             if (buffer[curr_index] != ' ' && buffer[curr_index] != '\n') {
                 return curr_index;
             } else {
                 continue;
             }
+            // try to read again from file
         } else if ((read_bytes = read(file, buffer, BUFFER_SIZE)) > 0) {
             buffer[read_bytes] = '\0';
+            // in order to assign 0 to curr_index in the next iteration
             curr_index = -1;
             continue;
         } else {
             break;
         }
     }
-    return FILE_TERMINATED;
+    // done reading all bytes from the file
+    if (read_bytes == 0) {
+        return FILE_TERMINATED;
+    }
+    printf("getNextNonWhiteSpaceChar: Error while reading from file.\n");
+    return ERROR;
 }
 
 
@@ -71,10 +89,15 @@ int compareFiles(char file_path1[], char file_path2[]) {
                     i = getNextNonWhiteSpaceChar(file1, buff1, i);
                     if (i == FILE_TERMINATED) {
                         break;
+                    } else if (i == ERROR) {
+                        result_code = ERROR;
                     }
                 } else {
                     j = getNextNonWhiteSpaceChar(file2, buff2, j);
                     if (j == FILE_TERMINATED) {
+                        break;
+                    } else if (j == ERROR) {
+                        result_code = ERROR;
                         break;
                     }
                 }
