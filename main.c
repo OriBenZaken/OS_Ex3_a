@@ -11,6 +11,7 @@
 #define FILE_TERMINATED -2
 
 int getNextNonWhiteSpaceChar(int file, char buffer[BUFFER_SIZE], int curr_index) {
+    int read_bytes;
     while (1) {
         curr_index++;
         if (buffer[curr_index] != '\0') {
@@ -19,8 +20,9 @@ int getNextNonWhiteSpaceChar(int file, char buffer[BUFFER_SIZE], int curr_index)
             } else {
                 continue;
             }
-        } else if (read(file, buffer, BUFFER_SIZE) > 0) {
-            curr_index = 0;
+        } else if ((read_bytes = read(file, buffer, BUFFER_SIZE)) > 0) {
+            buffer[read_bytes] = '\0';
+            curr_index = -1;
             continue;
         } else {
             break;
@@ -36,9 +38,7 @@ int compareFiles(char file_path1[], char file_path2[]) {
     int file1, file2;
     char buff1[BUFFER_SIZE + 1];
     char buff2[BUFFER_SIZE + 1];
-
-    buff1[BUFFER_SIZE] = '\0';
-    buff2[BUFFER_SIZE] = '\0';
+    int read_bytes_file1, read_bytes_file2;
 
     // open first file
     file1 = open(file_path1, O_RDONLY);
@@ -56,14 +56,16 @@ int compareFiles(char file_path1[], char file_path2[]) {
         return ERROR;
     }
 
-    int i, j = 0;
-    if (read(file1, buff1, BUFFER_SIZE) > 0 && read(file2, buff2, BUFFER_SIZE) > 0) {
+    int i = 0, j = 0;
+    if ((read_bytes_file1 = read(file1, buff1, BUFFER_SIZE)) > 0 && (read_bytes_file2 = read(file2, buff2, BUFFER_SIZE)) > 0) {
+        buff1[read_bytes_file1] = '\0';
+        buff2[read_bytes_file2] = '\0';
         while (buff1[i] != '\0' && buff2[j] != '\0') {
             // characters are identical
             if (buff1[i] == buff2[j]) {
                 i++;
                 j++;
-            } else if (buff1[i] == '\n' || buff1[i] == ' ' || buff2[j] == '\n' || buff2[i] == ' ') {
+            } else if (buff1[i] == '\n' || buff1[i] == ' ' || buff2[j] == '\n' || buff2[j] == ' ') {
                 result_code = SIMILAR;
                 if (buff1[i] == '\n' || buff1[i] == ' ') {
                     i = getNextNonWhiteSpaceChar(file1, buff1, i);
@@ -86,16 +88,18 @@ int compareFiles(char file_path1[], char file_path2[]) {
             }
 
             if (buff1[i] == '\0') {
-                if (read(file1, buff1, BUFFER_SIZE) > 0) {
+                if ((read_bytes_file1 = read(file1, buff1, BUFFER_SIZE)) > 0) {
                     i = 0;
+                    buff1[read_bytes_file1] = '\0';
                 } else {
                     break;
                 }
             }
 
             if (buff2[j] == '\0') {
-                if (read(file2, buff2, BUFFER_SIZE) > 0) {
+                if ((read_bytes_file2 = read(file2, buff2, BUFFER_SIZE)) > 0) {
                     j = 0;
+                    buff2[read_bytes_file2] = '\0';
                 } else {
                     break;
                 }
