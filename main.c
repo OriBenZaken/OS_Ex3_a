@@ -45,6 +45,7 @@ int getNextNonWhiteSpaceChar(int file, char buffer[BUFFER_SIZE], int curr_index)
     if (read_bytes == 0) {
         return FILE_TERMINATED;
     }
+    fprintf(stderr,"getNextNonWhiteSpaceChar: Error while reading from file.\n");
     printf("getNextNonWhiteSpaceChar: Error while reading from file.\n");
     return ERROR;
 }
@@ -62,20 +63,22 @@ int compareFiles(char file_path1[], char file_path2[]) {
     file1 = open(file_path1, O_RDONLY);
     if (file1 < 0) {
         printf("Error: failed opening the first file supplied\n");
-        // todo: print message to stderr?
+        fprintf(stderr,"Error: failed opening the first file supplied\n");
         return ERROR;
     }
 
     //open the second file
     file2 = open(file_path2, O_RDONLY);
     if (file2 < 0) {
-        printf("Error: failed opening the first file supplied\n");
-        // todo: print message to stderr?
+        printf("Error: failed opening the second file supplied\n");
+        fprintf(stderr,"Error: failed opening the second file supplied\n");
         return ERROR;
     }
 
     int i = 0, j = 0;
-    if ((read_bytes_file1 = read(file1, buff1, BUFFER_SIZE)) > 0 && (read_bytes_file2 = read(file2, buff2, BUFFER_SIZE)) > 0) {
+    read_bytes_file1 = read(file1, buff1, BUFFER_SIZE);
+    read_bytes_file2 = read(file2, buff2, BUFFER_SIZE);
+    if (read_bytes_file1 > 0 && read_bytes_file2 > 0) {
         buff1[read_bytes_file1] = '\0';
         buff2[read_bytes_file2] = '\0';
         while (buff1[i] != '\0' && buff2[j] != '\0') {
@@ -129,8 +132,13 @@ int compareFiles(char file_path1[], char file_path2[]) {
             }
         }
     } else {
-        result_code = ERROR;
-        printf("Error while reading from files.\n");
+        if ((read_bytes_file1 == 0 || read_bytes_file2 == 0) && !(read_bytes_file1 == 0 && read_bytes_file2 == 0)) {
+            result_code = SIMILAR;
+        } else if (read_bytes_file1 < 0 || read_bytes_file2 < 0){
+            fprintf(stderr,"Error: failed reading from file\n");
+            result_code = ERROR;
+            printf("Error while reading from files.\n");
+        }
     }
 
     // check if one of the file is still open and my contain white spaces.
@@ -151,12 +159,13 @@ int compareFiles(char file_path1[], char file_path2[]) {
 }
 
 int main(int argc, char *argv[]) {
+    int result_code;
     if (argc > 3) {
         printf("Too many arguments.\n");
     } else if (argc < 3) {
         printf("Expected two arguments.\n");
     } else {
-        int result_code = compareFiles(argv[1], argv[2]);
+        result_code = compareFiles(argv[1], argv[2]);
         switch (result_code) {
             case IDENTICAL:
                 printf("Files are identical.\n");
@@ -171,5 +180,5 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
-    return 0;
+    return result_code;
 }
