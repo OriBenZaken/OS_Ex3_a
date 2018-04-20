@@ -11,12 +11,13 @@
 #define DIFFERENT 1
 #define BUFFER_SIZE 16
 #define FILE_TERMINATED -2
-
+#define STDERR_FD 2
 /**
  * prints error in sys call to stderr.
  */
 void printErrorInSysCallToSTDERR() {
-    fprintf(stderr,"Error in system call\n");
+    char error_msg[] = "Error in stsyem call\n";
+    write(STDERR_FD, error_msg, sizeof(error_msg));
 }
 
 /**
